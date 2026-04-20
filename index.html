@@ -72,6 +72,7 @@ zh:{
   analytics_module:"模組",analytics_time:"停留時間",analytics_clicks:"點擊次數",analytics_acc:"答對率",
   analytics_correct_ans_total:"答對／已答／總題",
   analytics_no_data:"尚未測驗",analytics_sec:"秒",analytics_times:"次",
+  analytics_cards:"翻卡紀錄", analytics_cards_total:"總翻卡數",
   m0_nav:"0. 課程總覽",
   m0_title:"Vibe Coding 互動學習指南",
   m0_intro:"專為程式小白設計的 AI 輔助開發全攻略。整合 ML/GenAI 基礎知識、前後端架構原理、SPA 實作流程與 Vibe Coding 技術，讓你照表操課、按部就班，完成人生第一個互動學習網頁。",
@@ -254,6 +255,7 @@ en:{
   analytics_module:"Module",analytics_time:"Time Spent",analytics_clicks:"Clicks",analytics_acc:"Accuracy",
   analytics_correct_ans_total:"Correct / Answered / Total",
   analytics_no_data:"Not yet attempted",analytics_sec:"sec",analytics_times:"times",
+  analytics_cards:"Cards Read", analytics_cards_total:"Total Cards",
   m0_nav:"0. Overview",
   m0_title:"Vibe Coding Interactive Learning Guide",
   m0_intro:"A complete AI-assisted development guide for coding beginners. Integrates ML/GenAI fundamentals, front-end/back-end architecture, SPA implementation workflows, and Vibe Coding techniques — follow the plan step by step to build your first interactive learning webpage.",
@@ -987,17 +989,26 @@ function App(){
 
   const exportCSV=()=>{
     const BOM='\uFEFF';
-    const header=[t.analytics_module,t.analytics_time+'(s)',t.analytics_clicks,t.analytics_correct_ans_total].join(',');
+    const header=[`"${t.analytics_module}"`,`"${t.analytics_time}(s)"`,`"${t.analytics_clicks}"`,`"${t.analytics_cards}"`,`"${t.analytics_correct_ans_total}"`].join(',');
     const rows=modulesList.slice(0,7).map(m=>{
       const d=analytics.mods[m.idx];
       const acc=d.answered>0?`${d.correct}/${d.answered}/${d.total}`:t.analytics_no_data;
-      return[m.icon+m.nav,d.time,d.clicks,acc].join(',');
+      // 確保字串皆由雙引號包覆，避免 Excel 解析逗號時錯位；數值則保持純數字。
+      return[`"${m.nav}"`, d.time, d.clicks, d.cards.size, `"${acc}"`].join(',');
     });
-    const meta=[`${t.analytics_group},${userInfo.group}`,`${t.analytics_dept},${userInfo.dept}`,`${t.analytics_id},${userInfo.id}`,`${t.analytics_name},${userInfo.name}`,`${t.analytics_total_time},${analytics.totalTime}s`,`${t.analytics_total_clicks},${analytics.totalClicks}`].join('\n');
+    const meta=[
+      `"${t.analytics_group}","${userInfo.group}"`,
+      `"${t.analytics_dept}","${userInfo.dept}"`,
+      `"${t.analytics_id}","${userInfo.id}"`,
+      `"${t.analytics_name}","${userInfo.name}"`,
+      `"${t.analytics_total_time}","${analytics.totalTime}s"`,
+      `"${t.analytics_total_clicks}","${analytics.totalClicks}"`
+    ].join('\n');
     const csv=BOM+meta+'\n\n'+header+'\n'+rows.join('\n');
     const now=new Date();
     const ts=`${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
-    const fname=`VC_${userInfo.group||'G'}_${userInfo.dept||'dept'}_${userInfo.name||'student'}_${ts}.csv`;
+    // 檔名規則: (品牌) + 主標題 + (組別 + 學號) + 姓名 + 匯出日期
+    const fname=`VC_VibeCoding_${userInfo.group}_${userInfo.id}_${userInfo.name}_${ts}.csv`;
     const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
     const url=URL.createObjectURL(blob);
     const a=document.createElement('a');a.href=url;a.download=fname;a.click();
@@ -1188,7 +1199,7 @@ function App(){
             {val:analytics.totalTime+'s',label:t.analytics_total_time},
             {val:analytics.totalClicks,label:t.analytics_total_clicks},
             {val:overallAcc!==null?overallAcc+'%':'-',label:t.analytics_overall_acc},
-            {val:Object.values(analytics.mods).reduce((s,m)=>s+m.cards.size,0), label:lang==='zh'?'總翻卡數':'Total Cards'}
+            {val:Object.values(analytics.mods).reduce((s,m)=>s+m.cards.size,0), label:t.analytics_cards_total}
           ].map((s,i)=>(
             <div key={i} className="bg-bcg-green dark:bg-bcg-green/20 rounded-xl p-6 border border-bcg-green dark:border-bcg-gold/30 text-center shadow-md">
               <div className="font-serif font-black text-3xl text-bcg-gold">{s.val}</div>
@@ -1203,7 +1214,7 @@ function App(){
                 <th className="p-4 rounded-tl-xl">{t.analytics_module}</th>
                 <th className="p-4 text-center">{t.analytics_time}</th>
                 <th className="p-4 text-center">{t.analytics_clicks}</th>
-                <th className="p-4 text-center">{lang==='zh'?'翻卡':'Cards'}</th>
+                <th className="p-4 text-center">{t.analytics_cards}</th>
                 <th className="p-4 text-center rounded-tr-xl">{t.analytics_correct_ans_total}</th>
               </tr>
             </thead>
