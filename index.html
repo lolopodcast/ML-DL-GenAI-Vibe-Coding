@@ -706,11 +706,19 @@ function App(){
           if (forbidden.some(Boolean)) { e.preventDefault(); showToast(); }
       };
       const handleContext = (e) => {
-          if (window.getSelection().toString().length > 0) return;
-          const target = e.target;
-          if (target.tagName === 'IMG' || target.tagName === 'SVG' || target.closest('header') || target.closest('footer')) {
-              e.preventDefault(); showToast();
+          // 如果有反白選取文字，允許右鍵（方便查字典或複製）
+          const selection = window.getSelection().toString();
+          if (selection.length > 0) {
+              // 但如果是點擊圖片或 SVG 圖表，即使有選取也不允許右鍵
+              if (e.target.tagName === 'IMG' || e.target.tagName === 'SVG' || e.target.closest('svg')) {
+                  e.preventDefault();
+                  showToast();
+              }
+              return;
           }
+          // 其他所有情況（包含網頁空白處、未選取文字的段落等）全面阻擋
+          e.preventDefault();
+          showToast();
       };
       window.addEventListener('keydown', handleKey);
       window.addEventListener('contextmenu', handleContext);
